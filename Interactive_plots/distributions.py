@@ -11,7 +11,7 @@ class NormalDistData:
     """
 
     # Values must be (from) ColumnDataSource for interactivity to work
-    def __init__(self, n: int, mean: float, sd: float, skew: float):
+    def __init__(self, n: int, mean: float, sd: float, skew: float = 0.0):
         self._n = n
         self._mean = mean
         self._sd = sd
@@ -22,7 +22,6 @@ class NormalDistData:
 
     def _norm_dist(self) -> np.ndarray:
         """Generate normally distributed data with specified mean and standard deviation."""
-        #return np.random.normal(self._mean, self._sd, self._n)
         return skewnorm.rvs(self._skew, self._mean, self._sd, size=self._n)
 
     def _create_distribution(self):
@@ -37,14 +36,14 @@ class NormalDistData:
         """
         distribution_data = self._norm_dist()
         # Generate binned data
-        BINS = 20
-        _, bin_edges = np.histogram(distribution_data, bins=BINS, density=True)
+        bins = 20
+        _, bin_edges = np.histogram(distribution_data, bins=bins, density=True)
         # Set KDE bounds
         kde_min = np.floor(bin_edges.min())
         kde_max = np.ceil(bin_edges.max())
         # x datapoints for plotting
-        N_POINTS = 200
-        x = np.linspace(kde_min, kde_max, N_POINTS)
+        n_points = 200
+        x = np.linspace(kde_min, kde_max, n_points)
         # Make KDE obj from norm dist data
         kde_obj_y = gaussian_kde(distribution_data)
         # Get y values of KDE & convert to raw counts, not density

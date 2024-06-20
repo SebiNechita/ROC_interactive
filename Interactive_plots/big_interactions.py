@@ -4,39 +4,35 @@ from bokeh.models import CheckboxGroup, LinearColorMapper, Slider
 from bokeh.palettes import Colorblind8, Purples
 from bokeh.plotting import figure
 from bokeh.transform import transform
+from functools import partial
 from distributions import NormalDistData
 from metrics import Metrics
 
-# Add this line to enable inline display of Bokeh plots in Jupyter notebook
+# Enable inline display of Bokeh plots in Jupyter notebook
 output_notebook()
 
-
-# Function to create the Bokeh document
+# Add this line to enable inline display of Bokeh plots in Jupyter notebook
 def modify_doc(doc):
+    """Create the Bokeh document and set up the interactive plots and widgets."""
 
-    def threshold_slider_range_handler(attr, old, new):
-        """Update threshold slider range based on total spread of data."""
-        new_min = metrics.roc_thresholds.data["thresholds"].min()
-        new_max = metrics.roc_thresholds.data["thresholds"].max()
-        threshold_slider.start = new_min
-        threshold_slider.end = new_max
+    def create_slider(title, start, end, step, value, color):
+        """Helper function to create a slider."""
+        return Slider(title=title, start=start, end=end, step=step, value=value, max_width=125, bar_color=color)
 
-    def checkbox_callback(attr, old, new):
+    def update_plot_visibility(attr, old, new):
         """Update plot visibility based on checkbox status."""
         plot_roc.visible = 0 in checks1.active
         auc_bar.visible = 1 in checks1.active
-
-        plot_cm.visible = 3 in checks1.active
         acc_bar.visible = 2 in checks1.active
+        plot_cm.visible = 3 in checks1.active
 
     # Initial distribution settings
-    DEFAULT_N = 100
-    DEFAULT_MEAN_0 = 20.0
-    DEFAULT_MEAN_1 = 22.0
-    DEFAULT_SD = 3.0
-    DEFAULT_SKEW = 0.0
-    dist0 = NormalDistData(DEFAULT_N, DEFAULT_MEAN_0, DEFAULT_SD, DEFAULT_SKEW)
-    dist1 = NormalDistData(DEFAULT_N, DEFAULT_MEAN_1, DEFAULT_SD, DEFAULT_SKEW)
+    default_n = 100
+    default_mean_0 = 20.0
+    default_mean_1 = 22.0
+    default_sd = 3.0
+    dist0 = NormalDistData(default_n, default_mean_0, default_sd)
+    dist1 = NormalDistData(default_n, default_mean_1, default_sd)
 
     # Calculate all classification metrics
     metrics = Metrics(dist0, dist1)
@@ -46,78 +42,13 @@ def modify_doc(doc):
     cmap.insert(0, cmap.pop())
 
     # Interactive GUI Sliders
-    slider_n0 = Slider(
-        title="N",
-        start=50,
-        end=5000,
-        step=10,
-        value=DEFAULT_N,
-        max_width=125,
-        bar_color=cmap[0],
-    )
-    slider_mean0 = Slider(
-        title="Mean",
-        start=0,
-        end=50,
-        step=0.5,
-        value=DEFAULT_MEAN_0,
-        max_width=125,
-        bar_color=cmap[0],
-    )
-    slider_sd0 = Slider(
-        title="SD",
-        start=0.1,
-        end=20,
-        step=0.1,
-        value=DEFAULT_SD,
-        max_width=125,
-        bar_color=cmap[0],
-    )
-    # slider_skew0 = Slider(
-    #     title="Skew",
-    #     start=-50,
-    #     end=50,
-    #     step=1,
-    #     value=DEFAULT_SKEW,
-    #     max_width=75,
-    #     bar_color=cmap[0],
-    # )
-    slider_n1 = Slider(
-        title="N",
-        start=50,
-        end=5000,
-        step=10,
-        value=DEFAULT_N,
-        max_width=125,
-        bar_color=cmap[2],
-    )
-    slider_mean1 = Slider(
-        title="Mean",
-        start=0,
-        end=50,
-        step=0.5,
-        value=DEFAULT_MEAN_1,
-        max_width=125,
-        bar_color=cmap[2],
-    )
-    slider_sd1 = Slider(
-        title="SD",
-        start=0.1,
-        end=20,
-        step=0.1,
-        value=DEFAULT_SD,
-        max_width=125,
-        bar_color=cmap[2],
-    )
-    # slider_skew1 = Slider(
-    #     title="Skew",
-    #     start=-50,
-    #     end=50,
-    #     step=1,
-    #     value=DEFAULT_SKEW,
-    #     max_width=75,
-    #     bar_color=cmap[2],
-    # )
+    slider_n0 = create_slider("N", 50, 5000, 10, default_n, cmap[0])
+    slider_mean0 = create_slider("Mean", 0, 50, 0.5, default_mean_0, cmap[0])
+    slider_sd0 = create_slider("SD", 0.1, 20, 0.1, default_sd, cmap[0])
+    slider_n1 = create_slider("N", 50, 5000, 10, default_n, cmap[2])
+    slider_mean1 = create_slider("Mean", 0, 50, 0.5, default_mean_1, cmap[2])
+    slider_sd1 = create_slider("SD", 0.1, 20, 0.1, default_sd, cmap[2])
+
     threshold_slider = Slider(
         start=metrics.roc_thresholds.data["thresholds"].min(),
         end=metrics.roc_thresholds.data["thresholds"].max(),
@@ -130,92 +61,33 @@ def modify_doc(doc):
     )
 
     # Interactivity callback handling between plots & underlying data
-    slider_n0.on_change(
-        "value",
-        dist0.n_handler,
-        metrics.threshold_line_y_handler,
-        metrics.roc_curve_handler,
-        metrics.cm_handler,
-        metrics.metrics_handler,
-    )
-    slider_mean0.on_change(
-        "value",
-        dist0.mean_handler,
-        metrics.roc_curve_handler,
-        metrics.cm_handler,
-        metrics.metrics_handler,
-        threshold_slider_range_handler,
-    )
-    slider_sd0.on_change(
-        "value",
-        dist0.sd_handler,
-        metrics.threshold_line_y_handler,
-        metrics.roc_curve_handler,
-        metrics.cm_handler,
-        metrics.metrics_handler,
-        threshold_slider_range_handler,
-    )
-    # slider_skew0.on_change(
-    #     "value",
-    #     dist0.skew_handler,
-    #     metrics.threshold_line_y_handler,
-    #     metrics.roc_curve_handler,
-    #     metrics.cm_handler,
-    #     metrics.metrics_handler,
-    #     threshold_slider_range_handler,
-    # )
-    slider_n1.on_change(
-        "value",
-        dist1.n_handler,
-        metrics.threshold_line_y_handler,
-        metrics.roc_curve_handler,
-        metrics.cm_handler,
-        metrics.metrics_handler,
-    )
-    slider_mean1.on_change(
-        "value",
-        dist1.mean_handler,
-        metrics.roc_curve_handler,
-        metrics.cm_handler,
-        metrics.metrics_handler,
-        threshold_slider_range_handler,
-    )
-    slider_sd1.on_change(
-        "value",
-        dist1.sd_handler,
-        metrics.threshold_line_y_handler,
-        metrics.roc_curve_handler,
-        metrics.cm_handler,
-        metrics.metrics_handler,
-        threshold_slider_range_handler,
-    )
-    # slider_skew1.on_change(
-    #     "value",
-    #     dist1.skew_handler,
-    #     metrics.threshold_line_y_handler,
-    #     metrics.roc_curve_handler,
-    #     metrics.cm_handler,
-    #     metrics.metrics_handler,
-    #     threshold_slider_range_handler,
-    # )
+    sliders = [
+        (slider_n0, dist0.n_handler),
+        (slider_mean0, dist0.mean_handler),
+        (slider_sd0, dist0.sd_handler),
+        (slider_n1, dist1.n_handler),
+        (slider_mean1, dist1.mean_handler),
+        (slider_sd1, dist1.sd_handler)
+    ]
 
-    threshold_slider.on_change(
-        "value",
-        metrics.threshold_line_x_handler,
-        metrics.roc_threshold_dot_handler,
-        metrics.cm_handler,
-        metrics.metrics_handler,
-    )
+    for slider, handler in sliders:
+        slider.on_change("value", partial(handler))
+        slider.on_change("value", partial(metrics.threshold_line_y_handler))
+        slider.on_change("value", partial(metrics.roc_curve_handler))
+        slider.on_change("value", partial(metrics.cm_handler))
+        slider.on_change("value", partial(metrics.metrics_handler))
+
+    threshold_slider.on_change("value", partial(metrics.threshold_line_x_handler))
+    threshold_slider.on_change("value", partial(metrics.roc_threshold_dot_handler))
+    threshold_slider.on_change("value", partial(metrics.cm_handler))
+    threshold_slider.on_change("value", partial(metrics.metrics_handler))
 
     # Checkboxes for toggling individual plots
     PLOT_CHECKS1 = ["ROC Curve", "AUC", "Accuracy", "Confusion Matrix"]
+    checks1 = CheckboxGroup(labels=PLOT_CHECKS1, active=[0, 1], margin=(-45, 5, 5, 70))
+    checks1.on_change("active", update_plot_visibility)
 
-    checks1 = CheckboxGroup(
-        labels=PLOT_CHECKS1, active=[0, 1], margin=(-45, 5, 5, 70)
-    )  # top right bottom left
-    checks1.on_change("active", checkbox_callback)
-
-    # Distributions
+    # Distributions plot
     plot_distributions = figure(
         title="Class Distributions",
         x_axis_label="Model Prediction (arbitrary)",
@@ -224,15 +96,9 @@ def modify_doc(doc):
         width=325,
         toolbar_location=None
     )
-    plot_distributions.line(
-        "x", "y", source=dist0.kde_curve, line_color=cmap[0], line_width=2
-    )
-    plot_distributions.line(
-        "x", "y", source=dist1.kde_curve, line_color=cmap[2], line_width=2
-    )
-    plot_distributions.line(
-        "x", "y", source=metrics.threshold_line, line_color=cmap[4], line_width=4
-    )
+    plot_distributions.line("x", "y", source=dist0.kde_curve, line_color=cmap[0], line_width=2)
+    plot_distributions.line("x", "y", source=dist1.kde_curve, line_color=cmap[2], line_width=2)
+    plot_distributions.line("x", "y", source=metrics.threshold_line, line_color=cmap[4], line_width=4)
 
     # ROC Curve
     plot_roc = figure(
@@ -243,36 +109,13 @@ def modify_doc(doc):
         width=325,
         toolbar_location=None
     )
-    plot_roc.line(
-        "x", "y_upper", source=metrics.roc_curve, line_width=2, line_color=cmap[1]
-    )
+    plot_roc.line("x", "y_upper", source=metrics.roc_curve, line_width=2, line_color=cmap[1])
     plot_roc.line([0, 1], [0, 1], line_width=1, line_color="grey", line_dash="dashed")
-    plot_roc.scatter(
-        "x",
-        "y",
-        source=metrics.roc_threshold_dot,
-        size=13,
-        fill_color=cmap[4],
-        line_color=cmap[4],
-    )
-    # Add shading under ROC curve
-    plot_roc.varea(
-        source=metrics.roc_curve,
-        x="x",
-        y1="y_lower",
-        y2="y_upper",
-        fill_color=cmap[1],
-        alpha=0.1,
-    )
+    plot_roc.scatter("x", "y", source=metrics.roc_threshold_dot, size=13, fill_color=cmap[4], line_color=cmap[4])
+    plot_roc.varea(source=metrics.roc_curve, x="x", y1="y_lower", y2="y_upper", fill_color=cmap[1], alpha=0.1)
 
     # ROC AUC Bar
-    auc_bar = figure(
-        title="AUC",
-        x_range=[0, 1],
-        height=300,
-        width=92,
-        toolbar_location=None,
-    )
+    auc_bar = figure(title="AUC", x_range=[0, 1], height=300, width=92, toolbar_location=None)
     auc_bar.vbar(x=0.5, top="auc", source=metrics.metrics, width=0.5, fill_color=cmap[1])
     auc_bar.y_range.start = 0.0
     auc_bar.y_range.end = 1.0
@@ -293,7 +136,7 @@ def modify_doc(doc):
         width=325,
         toolbar_location=None
     )
-    cm_cmap = list(reversed(Purples[256]))[256 // 5 : -256 // 4]
+    cm_cmap = list(reversed(Purples[256]))[256 // 5: -256 // 4]
     mapper = LinearColorMapper(palette=cm_cmap)
     plot_cm.rect(
         x="x",
@@ -318,16 +161,8 @@ def modify_doc(doc):
     )
 
     # Accuracy Bar
-    acc_bar = figure(
-        title="Accuracy",
-        x_range=[0, 1],
-        height=300,
-        width=92,
-        toolbar_location=None,
-    )
-    acc_bar.vbar(
-        x=0.5, top="accuracy", source=metrics.metrics, width=0.5, fill_color=cmap[1]
-    )
+    acc_bar = figure(title="Accuracy", x_range=[0, 1], height=300, width=92, toolbar_location=None)
+    acc_bar.vbar(x=0.5, top="accuracy", source=metrics.metrics, width=0.5, fill_color=cmap[1])
     acc_bar.y_range.start = 0.0
     acc_bar.y_range.end = 1.0
     acc_bar.xgrid.grid_line_color = None
@@ -339,23 +174,13 @@ def modify_doc(doc):
     # Initialize plot visibility
     plot_roc.visible = 0 in checks1.active
     auc_bar.visible = 1 in checks1.active
-
-    plot_cm.visible = 3 in checks1.active
     acc_bar.visible = 2 in checks1.active
+    plot_cm.visible = 3 in checks1.active
 
     # Arrange plots and widgets in a layout
     spacer = Spacer(width=200, height=1)
-    slider_row1 = row(slider_n0, slider_mean0, slider_sd0,
-                      # slider_skew0,
-                      spacer)
-    slider_row2 = row(
-        slider_n1,
-        slider_mean1,
-        slider_sd1,
-        # slider_skew1,
-        threshold_slider,
-        checks1
-    )
+    slider_row1 = row(slider_n0, slider_mean0, slider_sd0, spacer)
+    slider_row2 = row(slider_n1, slider_mean1, slider_sd1, threshold_slider, checks1)
     graph_row1 = row(plot_distributions, plot_roc, auc_bar, plot_cm, acc_bar)
     layout = column(slider_row1, slider_row2, graph_row1)
 

@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from bokeh.models import ColumnDataSource
 from sklearn.metrics import (accuracy_score, confusion_matrix, roc_auc_score, roc_curve)
-
 from distributions import NormalDistData
 
 
