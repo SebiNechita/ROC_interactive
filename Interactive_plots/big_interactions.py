@@ -11,6 +11,7 @@ from metrics import Metrics
 # Enable inline display of Bokeh plots in Jupyter notebook
 output_notebook()
 
+
 # Add this line to enable inline display of Bokeh plots in Jupyter notebook
 def modify_doc(doc):
     """Create the Bokeh document and set up the interactive plots and widgets."""
@@ -83,8 +84,8 @@ def modify_doc(doc):
     threshold_slider.on_change("value", partial(metrics.metrics_handler))
 
     # Checkboxes for toggling individual plots
-    PLOT_CHECKS1 = ["ROC Curve", "AUC", "Accuracy", "Confusion Matrix"]
-    checks1 = CheckboxGroup(labels=PLOT_CHECKS1, active=[0, 1], margin=(-45, 5, 5, 70))
+    plot_checks1 = ["ROC Curve", "AUC", "Accuracy", "Confusion Matrix"]
+    checks1 = CheckboxGroup(labels=plot_checks1, active=[0, 1], margin=(-45, 5, 5, 70))
     checks1.on_change("active", update_plot_visibility)
 
     # Distributions plot
